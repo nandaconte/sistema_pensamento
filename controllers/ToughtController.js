@@ -1,65 +1,92 @@
 const Tought = require('../models/Tought')
 const User = require('../models/User')
-
-
 const { Op } = require('sequelize')
-
+const { search } = require('../routes/toughtsRoutes')
 
 module.exports = class ToughtController {
-    
-    static async  dashboard (req,res){
-        const userId = req.session.userId
+
+    static async dashboard(req, res) {
+        const userId = req.session.userid
+
         const user = await User.findOne({
-            where:{
+            where: {
                 id: userId,
             },
             include: Tought,
             plain: true,
         })
-        const toughts = user.Tought.map((result) => result.dataValues)
+
+        const toughts = user.Toughts.map((result) => result.dataValues)
+
         let emptyToughts = true
-        if(toughts.length > 0){
+
+        if (toughts.length > 0) {
             emptyToughts = false
         }
+
         console.log(toughts)
         console.log(emptyToughts)
-        res.render('toughts/dasboard', { toughts, emptyToughts})
-    }
-    
-    static showToughts(req, res) {
 
+        res.render('toughts/dashboard', { toughts, emptyToughts })
+    }
+
+    static createTought(req, res) {
+        res.render('toughts/create')
+    }
+
+    static createToughtSave(req, res) {
+        const tought = {
+            title: req.body.title,
+            UserId: req.session.userid,
+        }
+
+        Tought.create(tought)
+            .then(() => {
+                req.flash('message', 'Pensamento criado com sucesso!')
+                req.session.save(() => {
+                    res.redirect('/toughts/dashboard')
+                })
+            })
+            .catch((err) => console.log())
+    }
+
+    static showToughts(req, res) {
         console.log(req.query)
 
+        // check if user is searching
         let search = ''
 
-        if (req. query.search){
+        if (req.query.search) {
             search = req.query.search
         }
+
+        // order results, newest first
         let order = 'DESC'
 
-        if (req.query.order === 'olde'){
+        if (req.query.order === 'old') {
             order = 'ASC'
-        }else{
+        } else {
             order = 'DESC'
         }
 
         Tought.findAll({
-            included: userInfo,
+            include: User,
             where: {
-                title: { [op.like]: `%${search}` },
+                title: { [Op.like]: `%${search}%` },
             },
-            order: [['createdAt'].order],
+            order: [['createdAt', order]],
         })
             .then((data) => {
-                let toughtQty = data.length
+                let toughtsQty = data.length
 
-                if (toughtQty == 0)
-                    toughtQty = false
+                if (toughtsQty === 0) {
+                    toughtsQty = false
+                }
 
-                    const toughts = data.map((result) => result.get({plain:true}))
+                const toughts = data.map((result) => result.get({ plain: true }))
 
-                res.render('toughts/home', {toughts, toughtQty, search})
+                res.render('toughts/home', { toughts, toughtsQty, search })
             })
-            .catch((err)=> console.log(err))
+            .catch((err) => console.log(err))
     }
 }
