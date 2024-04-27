@@ -89,4 +89,43 @@ module.exports = class ToughtController {
             })
             .catch((err) => console.log(err))
     }
+
+    static removeTought(req, res) {
+        const id = req.body.id
+        Tought.destroy({ where: { id: id } })
+            .then(() => {
+                req.flash('message', 'Pensamento removido com sucesso!')
+                req.session.save(() => {
+                    res.redirect('/toughts/dashboard')
+                })
+            })
+            .catch((err) => console.log())
+    }
+
+    static updateTought(req, res) {
+        const id = req.params.id
+        Tought.findOne({ where: { id: id }, raw: true })
+            .then((tought) => {
+                res.render('toughts/edit', { tought })
+            })
+            .catch((err) => console.log())
+    }
+static updateToughtPost (req,res){
+    const id = req.body.id
+    const tought ={
+        title:req.body.title,
+        description: req.body.description,
+    }
+    Tought.update(tought, {where: {id:id}})
+    .then(()=>{
+        req.flash ('message', 'Pensamento atualizado com sucesso')
+        req.session.save (()=>{
+            res.redirect('/toughts/dashboard')
+        })
+    })
+    .catch((err) => console.log())
+}
+
+
+
 }
